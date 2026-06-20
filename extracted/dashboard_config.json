@@ -1,0 +1,12 @@
+{
+  "cards": [
+    {"id": "dc_1", "name": "在册村人数", "icon": "👥", "color": "#e74c3c", "file": "", "calc_type": "auto", "manual_value": 0},
+    {"id": "dc_2", "name": "党员人数", "icon": "🚩", "color": "#c0392b", "file": "", "calc_type": "auto", "manual_value": 0},
+    {"id": "dc_3", "name": "18岁以上人数", "icon": "🧑", "color": "#3498db", "file": "", "calc_type": "auto", "manual_value": 0},
+    {"id": "dc_4", "name": "18岁以下人数", "icon": "👦", "color": "#f39c12", "file": "", "calc_type": "auto", "manual_value": 0},
+    {"id": "dc_5", "name": "60岁以上人数", "icon": "🧓", "color": "#27ae60", "file": "", "calc_type": "auto", "manual_value": 0},
+    {"id": "dc_6", "name": "80岁以上人数", "icon": "👴", "color": "#9b59b6", "file": "", "calc_type": "auto", "manual_value": 0}
+  ],
+  "analysis_file": "",
+  "tab_order": ["files", "dashboard", "search", "reminders", "templates"]
+}

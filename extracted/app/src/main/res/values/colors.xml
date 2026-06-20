@@ -1,0 +1,9 @@
+<resources>
+    <color name="colorPrimary">#8B0000</color>
+    <color name="colorPrimaryVariant">#C41E3A</color>
+    <color name="colorSecondary">#D4AF37</color>
+    <color name="colorSecondaryVariant">#F1C40F</color>
+    <color name="colorBackground">#f5f0e8</color>
+    <color name="colorSurface">#FFFFFF</color>
+    <color name="colorError">#C41E3A</color>
+</resources>

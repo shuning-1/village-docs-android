@@ -1,0 +1,13 @@
+{
+  "accounts": [
+    {
+      "id": "super_1",
+      "username": "admin",
+      "role": "super",
+      "display_name": "超级管理员",
+      "created_at": "",
+      "enabled": true,
+      "password_hash": "pbkdf2_sha256$b2a7b34cd73831f40e62e9c89a144e45$cebcf45a1a36309f59705bce4e9d2a911898da81a8d105c2aab0d4b5a29c4aab"
+    }
+  ]
+}

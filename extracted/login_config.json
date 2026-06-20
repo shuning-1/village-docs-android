@@ -1,0 +1,28 @@
+{
+  "admin_user": "admin",
+  "admin_pass": "123456",
+  "secret_key": "admin",
+  "login_village": "",
+  "remembered_user": "",
+  "remembered_pass": "",
+  "login_title": "智慧文档管理系统",
+  "login_subtitle": "党建引领智慧村务平台",
+  "login_icon_type": "emoji",
+  "login_icon_emoji": "⭐",
+  "login_icon_image": "",
+  "login_icon_crop": {
+    "x": 0,
+    "y": 0,
+    "w": 100,
+    "h": 100,
+    "size": 80
+  },
+  "login_bg_type": "color",
+  "login_bg_color": "linear-gradient(135deg, #8B0000 0%, #C41E3A 40%, #A01030 100%)",
+  "login_bg_image": "",
+  "login_bg_fit": "cover",
+  "header_title": "",
+  "header_subtitle": "",
+  "login_footer_text": "党建引领 · 智慧村务",
+  "window_title": "智慧文档管理系统"
+}
