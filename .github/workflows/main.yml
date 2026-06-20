@@ -1,4 +1,4 @@
-name: 名称：构建安卓 APK
+name: Build Android APK
 
 on:
   push:
@@ -23,31 +23,25 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Generate Gradle Wrapper
+      - name: Accept licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Download Gradle and build APK
         run: |
           echo "=== 下载 Gradle 8.7 ==="
           curl -sSL -o gradle.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
           unzip -q gradle.zip
           rm gradle.zip
-          export PATH="$PWD/gradle-8.7/bin:$PATH"
           
-          echo "=== 生成 Gradle Wrapper ==="
-          gradle wrapper --gradle-version 8.7 --distribution-type bin
+          echo "=== 开始构建 APK（直接用 gradle 命令） ==="
+          ./gradle-8.7/bin/gradle assembleDebug --no-daemon --stacktrace 2>&1 | tail -100
           
+          echo ""
+          echo "=== 构建输出文件 ==="
+          find app/build -name "*.apk" -type f 2>/dev/null
+          
+          # 清理 gradle 临时目录
           rm -rf gradle-8.7
-          chmod +x gradlew
-          chmod +x gradlew.bat
-          
-          echo "=== Wrapper 文件 ==="
-          ls -la gradle/wrapper/
-
-      - name: Accept Android licenses
-        run: yes | sdkmanager --licenses || true
-
-      - name: Build debug APK
-        run: |
-          echo "=== 开始构建 APK ==="
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
