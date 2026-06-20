@@ -1,17 +1,7 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="Theme.DocumentManager" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+<resources>
+    <style name="Theme.DocumentManager" parent="Theme.MaterialComponents.Light.NoActionBar">
         <item name="colorPrimary">#8B0000</item>
-        <item name="colorPrimaryVariant">#C41E3A</item>
-        <item name="colorOnPrimary">#FFFFFF</item>
-        <item name="colorSecondary">#D4AF37</item>
-        <item name="colorSecondaryVariant">#F1C40F</item>
-        <item name="colorOnSecondary">#000000</item>
-        <item name="colorError">#C41E3A</item>
-        <item name="colorOnError">#FFFFFF</item>
-        <item name="colorSurface">#FFFFFF</item>
-        <item name="colorOnSurface">#1a1a2e</item>
-        <item name="android:windowBackground">@color/colorBackground</item>
-        <item name="colorBackground">#f5f0e8</item>
-        <item name="colorOnBackground">#1a1a2e</item>
+        <item name="colorPrimaryDark">#C41E3A</item>
+        <item name="colorAccent">#D4AF37</item>
     </style>
 </resources>
