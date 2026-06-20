@@ -3306,19 +3306,692 @@
     }
   }, { passive: false });
 
-  // ===== API调用封装（HTTP方式） =====
+  // ===== API调用封装（纯前端本地版本） =====
+  // 所有数据存储在 localStorage 中，无需后端服务器
+  const LOCAL_STORAGE_KEY = 'village_doc_system_v1';
+
+  function getLocalData() {
+    try {
+      const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch(e) {}
+    return getDefaultData();
+  }
+
+  function setLocalData(data) {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+    } catch(e) {
+      console.error('保存数据失败', e);
+    }
+  }
+
+  function getDefaultData() {
+    return {
+      config: {
+        admin_user: 'gzc',
+        admin_pass: '123456',
+        secret_key: 'admin',
+        login_village: '高庄',
+        village: '高庄村',
+        town: '都司镇',
+        county: '牡丹区',
+        header_title: '智慧文档管理系统',
+        window_title: '智慧文档管理系统',
+        remembered_user: '',
+        remembered_pass: '',
+        login_footer_text: '党建引领 · 智慧村务',
+        login_title: '智慧文档管理系统',
+        login_icon_type: 'emoji',
+        login_icon_emoji: '⭐',
+        categories: [
+          { id: 'cat_1', name: '村务文书', subtitle: '各类公文模板', emoji: '📋', items: [], order: 0 },
+          { id: 'cat_2', name: '证明证件', subtitle: '村民各类证明', emoji: '📄', items: [], order: 1 },
+          { id: 'cat_3', name: '合同协议', subtitle: '合同类文件', emoji: '📝', items: [], order: 2 },
+          { id: 'cat_4', name: '统计报表', subtitle: '各类统计表', emoji: '📊', items: [], order: 3 },
+          { id: 'cat_5', name: '会议记录', subtitle: '各类会议纪要', emoji: '📅', items: [], order: 4 }
+        ],
+        tab_order: ['dashboard', 'files', 'excel', 'word', 'certificates', 'birthdays', 'search']
+      },
+      accounts: [
+        { id: 'acc_1', username: 'gzc', password: '123456', role: 'super', display_name: '管理员' }
+      ],
+      operation_logs: [],
+      excel_files: [],
+      certificates: [],
+      reminders: [],
+      dashboard_config: {
+        cards: [
+          { id: 'c1', title: '村民户数', value: '0', emoji: '🏠', color: 'red' },
+          { id: 'c2', title: '党员人数', value: '0', emoji: '👥', color: 'red' },
+          { id: 'c3', title: '低保户数', value: '0', emoji: '💕', color: 'red' },
+          { id: 'c4', title: '五保老人', value: '0', emoji: '👴', color: 'red' }
+        ]
+      }
+    };
+  }
+
+  // 生成唯一ID
+  function genId(prefix) {
+    return (prefix || 'id') + '_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+  }
+
+  // 包装返回结果
+  function wrapSuccess(result) { return result; }
+  function wrapError(msg) { throw new Error(msg); }
+
+  // ===== 主 API 路由 =====
   async function apiCall(method, args) {
     args = args || [];
-    const resp = await fetch('/api/call', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({method: method, args: args})
-    });
-    const data = await resp.json();
-    if (!data.success) {
-      throw new Error(data.message || 'API调用失败');
+    await new Promise(r => setTimeout(r, 30)); // 模拟网络延迟
+
+    let data = getLocalData();
+    let cfg = data.config;
+    let result = null;
+
+    switch(method) {
+      // === 配置 ===
+      case 'get_config':
+        result = cfg;
+        break;
+      case 'save_initial_setup':
+        if (args[0]) cfg.village = args[0];
+        if (args[1]) cfg.town = args[1];
+        if (args[2]) cfg.county = args[2];
+        if (args[3]) cfg.header_title = (args[0] || '高庄村') + ' · 智慧文档管理系统';
+        setLocalData(data);
+        result = cfg;
+        break;
+      case 'update_village_info':
+        if (args[0] !== undefined) cfg.village = args[0];
+        if (args[1] !== undefined) cfg.town = args[1];
+        if (args[2] !== undefined) cfg.county = args[2];
+        setLocalData(data);
+        result = true;
+        break;
+      case 'update_header_title':
+        const p = args[0] || {};
+        if (p.title) cfg.header_title = p.title;
+        if (p.subtitle !== undefined) cfg.subtitle = p.subtitle;
+        if (p.village_title !== undefined) cfg.header_title = p.village_title;
+        setLocalData(data);
+        result = true;
+        break;
+      case 'has_base_path':
+        result = true;
+        break;
+      case 'get_base_path':
+        result = cfg.base_path || './';
+        break;
+      case 'set_folder_path':
+        const fp = args[0] || {};
+        cfg.base_path = fp.path || cfg.base_path;
+        setLocalData(data);
+        result = true;
+        break;
+      case 'select_folder':
+        result = cfg.base_path || './';
+        break;
+      case 'get_tab_order':
+        result = cfg.tab_order || ['dashboard', 'files', 'excel', 'word', 'certificates', 'birthdays', 'search'];
+        break;
+      case 'save_tab_order':
+        cfg.tab_order = args[0] || cfg.tab_order;
+        setLocalData(data);
+        result = true;
+        break;
+
+      // === 登录配置 ===
+      case 'get_login_config':
+        result = {
+          admin_user: cfg.admin_user || 'gzc',
+          admin_pass: cfg.admin_pass || '123456',
+          secret_key: cfg.secret_key || 'admin',
+          login_village: cfg.login_village || '高庄',
+          login_title: cfg.login_title || '智慧文档管理系统',
+          login_subtitle: cfg.login_subtitle || '',
+          login_footer_text: cfg.login_footer_text || '党建引领 · 智慧村务',
+          login_icon_type: cfg.login_icon_type || 'emoji',
+          login_icon_emoji: cfg.login_icon_emoji || '⭐',
+          remembered_user: cfg.remembered_user || '',
+          remembered_pass: cfg.remembered_pass || ''
+        };
+        break;
+      case 'update_login_config':
+        if (args[1] !== undefined) cfg.admin_user = args[1];
+        if (args[2] !== undefined) cfg.admin_pass = args[2];
+        if (args[3] !== undefined) cfg.login_village = args[3];
+        if (args[4] !== undefined) cfg.secret_key = args[4];
+        setLocalData(data);
+        result = true;
+        break;
+      case 'update_login_appearance':
+        const updates = args[1] || {};
+        for (const key in updates) {
+          if (updates[key] !== undefined && updates[key] !== null) {
+            cfg[key] = updates[key];
+          }
+        }
+        setLocalData(data);
+        result = true;
+        break;
+      case 'save_remembered_login':
+        cfg.remembered_user = args[1] ? args[0] : '';
+        cfg.remembered_pass = args[1] ? args[2] : '';
+        setLocalData(data);
+        result = true;
+        break;
+
+      // === 登录 ===
+      case 'multi_login':
+        const u = args[0]; const pw = args[1];
+        let found = null;
+        for (const ac of (data.accounts || [])) {
+          if (ac.username === u && ac.password === pw) {
+            found = ac; break;
+          }
+        }
+        if (found) {
+          result = { success: true, role: found.role || 'admin', id: found.id, display_name: found.display_name || found.username };
+        } else {
+          result = { success: false };
+        }
+        break;
+
+      // === 账户管理 ===
+      case 'get_accounts':
+        result = data.accounts || [];
+        break;
+      case 'add_account':
+        const newAcc = {
+          id: genId('acc'),
+          username: args[1] || '',
+          password: args[2] || '',
+          role: args[3] || 'staff',
+          display_name: args[4] || args[1] || ''
+        };
+        if (!data.accounts) data.accounts = [];
+        data.accounts.push(newAcc);
+        setLocalData(data);
+        result = true;
+        break;
+      case 'update_account':
+        const accId = args[1];
+        const accData = args[2] || {};
+        if (data.accounts) {
+          const acc = data.accounts.find(a => a.id === accId);
+          if (acc) {
+            if (accData.username !== undefined) acc.username = accData.username;
+            if (accData.password !== undefined) acc.password = accData.password;
+            if (accData.role !== undefined) acc.role = accData.role;
+            if (accData.display_name !== undefined) acc.display_name = accData.display_name;
+            setLocalData(data);
+          }
+        }
+        result = true;
+        break;
+      case 'delete_account':
+        if (data.accounts) {
+          data.accounts = data.accounts.filter(a => a.id !== args[1]);
+          setLocalData(data);
+        }
+        result = true;
+        break;
+
+      // === 操作日志 ===
+      case 'add_operation_log':
+        if (!data.operation_logs) data.operation_logs = [];
+        data.operation_logs.unshift({
+          id: genId('log'),
+          time: new Date().toLocaleString('zh-CN'),
+          action: (args[0] || {}).action || '操作',
+          detail: (args[0] || {}).detail || '',
+          user: (args[0] || {}).user || 'admin'
+        });
+        if (data.operation_logs.length > 200) data.operation_logs.length = 200;
+        setLocalData(data);
+        result = true;
+        break;
+      case 'get_operation_logs':
+        result = data.operation_logs || [];
+        break;
+
+      // === 文件/分类 ===
+      case 'add_category':
+        if (!cfg.categories) cfg.categories = [];
+        const newCat = {
+          id: genId('cat'),
+          name: args[0] || '新分类',
+          subtitle: args[1] || '',
+          emoji: args[2] || '📋',
+          items: [],
+          order: cfg.categories.length
+        };
+        cfg.categories.push(newCat);
+        setLocalData(data);
+        result = true;
+        break;
+      case 'update_category':
+        if (cfg.categories) {
+          const cat = cfg.categories.find(c => c.id === args[0]);
+          if (cat) {
+            if (args[1] !== undefined) cat.name = args[1];
+            if (args[2] !== undefined) cat.subtitle = args[2];
+            if (args[3] !== undefined) cat.emoji = args[3];
+            setLocalData(data);
+          }
+        }
+        result = true;
+        break;
+      case 'delete_category':
+        if (cfg.categories) {
+          cfg.categories = cfg.categories.filter(c => c.id !== args[0]);
+          setLocalData(data);
+        }
+        result = true;
+        break;
+      case 'move_category':
+        if (cfg.categories) {
+          const idx = cfg.categories.findIndex(c => c.id === args[0]);
+          if (idx >= 0) {
+            const dir = args[1];
+            const target = dir === 'up' ? idx - 1 : idx + 1;
+            if (target >= 0 && target < cfg.categories.length) {
+              const tmp = cfg.categories[idx];
+              cfg.categories[idx] = cfg.categories[target];
+              cfg.categories[target] = tmp;
+              cfg.categories.forEach((c, i) => c.order = i);
+              setLocalData(data);
+            }
+          }
+        }
+        result = true;
+        break;
+      case 'reorder_categories':
+        if (cfg.categories && args[0]) {
+          const newOrder = args[0];
+          const ordered = [];
+          for (let i = 0; i < newOrder.length; i++) {
+            const c = cfg.categories.find(x => x.id === newOrder[i]);
+            if (c) { c.order = i; ordered.push(c); }
+          }
+          cfg.categories = ordered;
+          setLocalData(data);
+        }
+        result = true;
+        break;
+
+      // === 文件项 ===
+      case 'add_item':
+        const addCatId = args[0];
+        const addItemData = args[1] || {};
+        if (cfg.categories) {
+          const addCat = cfg.categories.find(c => c.id === addCatId);
+          if (addCat) {
+            if (!addCat.items) addCat.items = [];
+            const addNewItem = {
+              id: genId('item'),
+              name: addItemData.name || '新文件',
+              desc: addItemData.desc || '',
+              emoji: addItemData.emoji || '📄',
+              color: addItemData.color || 'blue',
+              file: addItemData.file || '',
+              badge: addItemData.badge || '',
+              sub_items: [],
+              order: addCat.items.length
+            };
+            addCat.items.push(addNewItem);
+            setLocalData(data);
+          }
+        }
+        result = true;
+        break;
+      case 'update_item':
+        const updCat = (cfg.categories || []).find(c =>
+          (c.items || []).some(it => it.id === args[0])
+        );
+        if (updCat) {
+          const updItem = updCat.items.find(it => it.id === args[0]);
+          if (updItem && args[1]) {
+            const ud = args[1];
+            if (ud.name !== undefined) updItem.name = ud.name;
+            if (ud.desc !== undefined) updItem.desc = ud.desc;
+            if (ud.emoji !== undefined) updItem.emoji = ud.emoji;
+            if (ud.color !== undefined) updItem.color = ud.color;
+            if (ud.file !== undefined) updItem.file = ud.file;
+            if (ud.badge !== undefined) updItem.badge = ud.badge;
+            setLocalData(data);
+          }
+        }
+        result = true;
+        break;
+      case 'delete_item':
+        for (const dc of (cfg.categories || [])) {
+          if (dc.items) {
+            const origLen = dc.items.length;
+            dc.items = dc.items.filter(it => it.id !== args[0]);
+            if (dc.items.length !== origLen) {
+              setLocalData(data);
+              break;
+            }
+          }
+        }
+        result = true;
+        break;
+      case 'move_item':
+        const mcCat = (cfg.categories || []).find(c => c.id === args[0]);
+        if (mcCat && mcCat.items) {
+          const mcIdx = mcCat.items.findIndex(it => it.id === args[1]);
+          if (mcIdx >= 0) {
+            const mcDir = args[2];
+            const mcTarget = mcDir === 'up' ? mcIdx - 1 : mcIdx + 1;
+            if (mcTarget >= 0 && mcTarget < mcCat.items.length) {
+              const tmp = mcCat.items[mcIdx];
+              mcCat.items[mcIdx] = mcCat.items[mcTarget];
+              mcCat.items[mcTarget] = tmp;
+              mcCat.items.forEach((it, i) => it.order = i);
+              setLocalData(data);
+            }
+          }
+        }
+        result = true;
+        break;
+      case 'reorder_items':
+        const rCat = (cfg.categories || []).find(c => c.id === args[0]);
+        if (rCat && rCat.items && args[1]) {
+          const rOrder = args[1];
+          const rNew = [];
+          for (let i = 0; i < rOrder.length; i++) {
+            const ri = rCat.items.find(it => it.id === rOrder[i]);
+            if (ri) { ri.order = i; rNew.push(ri); }
+          }
+          rCat.items = rNew;
+          setLocalData(data);
+        }
+        result = true;
+        break;
+      case 'select_file_for_item':
+        result = { file: '', success: true };
+        break;
+      case 'add_sub_item':
+        for (const asc of (cfg.categories || [])) {
+          if (asc.items) {
+            const parent = asc.items.find(it => it.id === args[0]);
+            if (parent) {
+              if (!parent.sub_items) parent.sub_items = [];
+              parent.sub_items.push({
+                id: genId('sub'),
+                name: args[1] || '附件',
+                file: args[2] || '',
+                order: parent.sub_items.length
+              });
+              setLocalData(data);
+              break;
+            }
+          }
+        }
+        result = true;
+        break;
+      case 'update_sub_item':
+        outer1: for (const usc of (cfg.categories || [])) {
+          if (usc.items) {
+            for (const uit of usc.items) {
+              if (uit.sub_items) {
+                const sub = uit.sub_items.find(s => s.id === args[0]);
+                if (sub) {
+                  if (args[1] !== undefined && args[1] !== null) sub.name = args[1];
+                  if (args[2] !== undefined) sub.file = args[2];
+                  setLocalData(data);
+                  break outer1;
+                }
+              }
+            }
+          }
+        }
+        result = true;
+        break;
+      case 'delete_sub_item':
+        outer2: for (const dsc of (cfg.categories || [])) {
+          if (dsc.items) {
+            for (const dit of dsc.items) {
+              if (dit.sub_items) {
+                const origCount = dit.sub_items.length;
+                dit.sub_items = dit.sub_items.filter(s => s.id !== args[0]);
+                if (dit.sub_items.length !== origCount) {
+                  setLocalData(data);
+                  break outer2;
+                }
+              }
+            }
+          }
+        }
+        result = true;
+        break;
+      case 'remove_main_file':
+        outer3: for (const rmc of (cfg.categories || [])) {
+          if (rmc.items) {
+            for (const rmit of rmc.items) {
+              if (rmit.id === args[0]) {
+                rmit.file = '';
+                setLocalData(data);
+                break outer3;
+              }
+            }
+          }
+        }
+        result = true;
+        break;
+      case 'remove_sub_from_item':
+        outer4: for (const rsfc of (cfg.categories || [])) {
+          if (rsfc.items) {
+            for (const rsit of rsfc.items) {
+              if (rsit.sub_items) {
+                const origSub = rsit.sub_items.length;
+                rsit.sub_items = rsit.sub_items.filter(s => s.id !== args[0]);
+                if (rsit.sub_items.length !== origSub) {
+                  setLocalData(data);
+                  break outer4;
+                }
+              }
+            }
+          }
+        }
+        result = true;
+        break;
+
+      // === 打开文件 ===
+      case 'open_file':
+        try {
+          if (window.AndroidApp && typeof window.AndroidApp.showToast === 'function') {
+            window.AndroidApp.showToast('文件功能在本应用中为示例模式');
+          }
+        } catch(e) {}
+        result = { success: true, message: '文件查看模式' };
+        break;
+
+      // === 搜索 ===
+      case 'search_files':
+        const kw = (args[0] || '').toLowerCase();
+        const sResults = [];
+        for (const sc of (cfg.categories || [])) {
+          for (const sit of (sc.items || [])) {
+            if ((sit.name || '').toLowerCase().includes(kw) ||
+                (sit.desc || '').toLowerCase().includes(kw)) {
+              sResults.push({
+                name: sit.name,
+                file: sit.file,
+                desc: sit.desc,
+                category: sc.name,
+                emoji: sit.emoji
+              });
+            }
+          }
+        }
+        result = sResults;
+        break;
+
+      // === Excel ===
+      case 'get_excel_files':
+        result = data.excel_files || [];
+        break;
+      case 'read_excel':
+        const ef = (data.excel_files || []).find(f => f.filename === args[0]);
+        if (ef) {
+          result = ef.content || { rows: [] };
+        } else {
+          result = { rows: [], headers: [], filename: args[0] };
+        }
+        break;
+      case 'save_excel':
+        const savePay = args[0] || {};
+        if (!data.excel_files) data.excel_files = [];
+        let efIdx = data.excel_files.findIndex(f => f.filename === savePay.filename);
+        if (efIdx < 0) {
+          data.excel_files.push({ filename: savePay.filename, content: savePay });
+        } else {
+          data.excel_files[efIdx] = { filename: savePay.filename, content: savePay };
+        }
+        setLocalData(data);
+        result = true;
+        break;
+
+      // === Word ===
+      case 'read_word':
+        const wf = data.word_files && data.word_files.find ? data.word_files.find(f => f.filename === args[0]) : null;
+        if (wf) {
+          result = wf.content || { html: '', filename: args[0] };
+        } else {
+          result = { html: '', filename: args[0] };
+        }
+        break;
+      case 'save_word':
+        if (!data.word_files) data.word_files = [];
+        const wfIdx = data.word_files.findIndex(f => f.filename === args[0]);
+        if (wfIdx < 0) {
+          data.word_files.push({ filename: args[0], content: args[1] });
+        } else {
+          data.word_files[wfIdx] = { filename: args[0], content: args[1] };
+        }
+        setLocalData(data);
+        result = true;
+        break;
+
+      // === 证书 ===
+      case 'get_cert_templates':
+        result = [
+          { id: 'tpl1', name: '身份证明', description: '村民身份证明模板' },
+          { id: 'tpl2', name: '贫困证明', description: '贫困家庭证明模板' },
+          { id: 'tpl3', name: '收入证明', description: '家庭收入证明模板' },
+          { id: 'tpl4', name: '居住证明', description: '村民居住证明模板' }
+        ];
+        break;
+      case 'get_certificates':
+        result = data.certificates || [];
+        break;
+      case 'add_certificate':
+        if (!data.certificates) data.certificates = [];
+        const certData = args[0] || {};
+        data.certificates.push({
+          id: genId('cert'),
+          name: certData.name || '新证书',
+          template: certData.template || '',
+          recipient: certData.recipient || '',
+          created_at: new Date().toLocaleString('zh-CN'),
+          content: certData.content || ''
+        });
+        setLocalData(data);
+        result = true;
+        break;
+      case 'delete_certificate':
+        if (data.certificates) {
+          data.certificates = data.certificates.filter(c => c.id !== args[0]);
+          setLocalData(data);
+        }
+        result = true;
+        break;
+
+      // === 提醒/生日 ===
+      case 'get_birthday_reminders':
+        result = data.reminders || [];
+        break;
+      case 'save_reminder_file':
+        result = { success: true };
+        break;
+      case 'dismiss_reminders':
+        const idsToDismiss = args[0] || [];
+        if (data.reminders) {
+          data.reminders = data.reminders.filter(r => !idsToDismiss.includes(r.id));
+          setLocalData(data);
+        }
+        result = true;
+        break;
+      case 'dismiss_all_reminders':
+        data.reminders = [];
+        setLocalData(data);
+        result = true;
+        break;
+      case 'mark_reminder_read':
+        const idsToRead = args[0] || [];
+        if (data.reminders) {
+          for (const rr of data.reminders) {
+            if (idsToRead.includes(rr.id)) rr.read = true;
+          }
+          setLocalData(data);
+        }
+        result = true;
+        break;
+
+      // === 仪表板 ===
+      case 'get_dashboard_config':
+        result = data.dashboard_config || { cards: [] };
+        break;
+      case 'save_dashboard_config':
+        data.dashboard_config = args[0] || data.dashboard_config;
+        setLocalData(data);
+        result = true;
+        break;
+      case 'calc_card_values':
+        result = (data.dashboard_config && data.dashboard_config.cards) || [];
+        break;
+      case 'calc_chart_data':
+        result = {
+          categories: ['村务文书', '证明证件', '合同协议', '统计报表', '会议记录'],
+          values: [(cfg.categories || []).reduce((s, c) => s + ((c.items || []).length), 0), 0, 0, 0, 0]
+        };
+        break;
+
+      // === 导入导出 ===
+      case 'export_config':
+        result = JSON.stringify(data, null, 2);
+        break;
+      case 'import_config':
+        if (typeof args[0] === 'object' && args[0] !== null) {
+          const newData = args[0];
+          // 简单合并：保留配置但保留原有密码
+          if (newData.config) {
+            newData.config.admin_user = cfg.admin_user;
+            newData.config.admin_pass = cfg.admin_pass;
+          }
+          setLocalData(newData);
+        }
+        result = true;
+        break;
+
+      // === 自动分类（空实现） ===
+      case 'auto_categorize_files':
+        result = { success: true, count: 0, message: '请手动添加文件' };
+        break;
+
+      case 'check_file':
+        result = { exists: true, path: args[0] };
+        break;
+
+      default:
+        console.warn('未实现的 API 方法:', method);
+        result = null;
     }
-    return data.result;
+
+    return result;
   }
 
   let CONFIG = {};
