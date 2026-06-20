@@ -28,6 +28,7 @@ jobs:
 
       - name: Build APK with Gradle 8.5
         run: |
+          cd extracted
           echo "=== 下载 Gradle 8.5 ==="
           curl -sSL -o gradle.zip https://services.gradle.org/distributions/gradle-8.5-bin.zip
           unzip -q gradle.zip
@@ -44,7 +45,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: extracted/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Create Release
         if: github.ref == 'refs/heads/main'
@@ -52,6 +53,6 @@ jobs:
         with:
           tag_name: v${{ github.run_number }}
           name: Release v${{ github.run_number }}
-          files: app/build/outputs/apk/debug/app-debug.apk
+          files: extracted/app/build/outputs/apk/debug/app-debug.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
